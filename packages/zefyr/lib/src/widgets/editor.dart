@@ -11,6 +11,7 @@ import 'scaffold.dart';
 import 'theme.dart';
 import 'toolbar.dart';
 import 'gestures.dart';
+import 'goods.dart' show GoodsUnion;
 
 class ZefyrEditorScope extends ChangeNotifier {
   ZefyrEditorScope({
@@ -18,6 +19,7 @@ class ZefyrEditorScope extends ChangeNotifier {
     @required ZefyrController controller,
     @required FocusNode focusNode,
     @required FocusScopeNode focusScope,
+    this.apihost,
   })  : _controller = controller,
         _imageDelegate = imageDelegate,
         _focusScope = focusScope,
@@ -35,6 +37,8 @@ class ZefyrEditorScope extends ChangeNotifier {
 
   FocusScopeNode _focusScope;
   FocusNode _focusNode;
+
+  final Uri apihost;
 
   ZefyrController _controller;
   NotusStyle get selectionStyle => _selectionStyle;
@@ -169,6 +173,7 @@ class ZefyrEditor extends StatefulWidget {
     Key key,
     @required this.controller,
     @required this.focusNode,
+    this.apihost,
     this.autofocus: true,
     this.enabled: true,
     this.padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -178,6 +183,7 @@ class ZefyrEditor extends StatefulWidget {
     this.physics,
   }) : super(key: key);
 
+  final Uri apihost;
   final ZefyrController controller;
   final FocusNode focusNode;
   final bool autofocus;
@@ -276,6 +282,7 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
         controller: widget.controller,
         focusNode: widget.focusNode,
         focusScope: FocusScope.of(context),
+        apihost: widget.apihost,
       );
       _scope.addListener(_handleChange);
     } else {
@@ -299,6 +306,8 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
     hideToolbar();
     _scope.removeListener(_handleChange);
     _scope.dispose();
+    // 清理商品缓存
+    GoodsUnion.cache.clear();
     super.dispose();
   }
 

@@ -69,6 +69,7 @@ class ZefyrEditableTextScope extends InheritedWidget {
   ZefyrEditableTextScope({
     Key key,
     @required Widget child,
+    @required this.enabled,
     @required this.selection,
     @required this.showCursor,
     @required this.renderContext,
@@ -76,6 +77,8 @@ class ZefyrEditableTextScope extends InheritedWidget {
   })  : _activeBoxes = new Set.from(renderContext.active),
         super(key: key, child: child);
 
+
+  final bool enabled;
   final TextSelection selection;
   final ValueNotifier<bool> showCursor;
   final ZefyrRenderContext renderContext;
@@ -162,6 +165,7 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText>
     return new ZefyrEditableTextScope(
       selection: selection,
       showCursor: showCursor,
+      enabled: widget.enabled, // 方便其他组件访问是否编辑状态
       renderContext: renderContext,
       imageDelegate: widget.imageDelegate,
       child: Stack(fit: StackFit.expand, children: layers),

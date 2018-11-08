@@ -390,7 +390,7 @@ class EmbedAttributeBuilder
   NotusAttribute<Map<String, dynamic>> image(String source) =>
       EmbedAttribute.image(source);
 
-  NotusAttribute<Map<String, dynamic>> goods(dynamic source) =>
+  NotusAttribute<Map<String, dynamic>> goods(Map<String, dynamic> source) =>
           EmbedAttribute.goods(source);
 
   @override
@@ -419,7 +419,7 @@ class EmbedAttribute extends NotusAttribute<Map<String, dynamic>> {
   EmbedAttribute.image(String source)
       : this._(<String, dynamic>{'type': _kImageEmbed, 'source': source});
 
-  EmbedAttribute.goods(dynamic source)
+  EmbedAttribute.goods(Map<String, dynamic> source)
           : this._(<String, dynamic>{'type': _kGoodsEmbed, 'source': source});
 
   /// Type of this embed.

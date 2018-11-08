@@ -11,7 +11,9 @@ import 'package:flutter/widgets.dart';
 import 'package:notus/notus.dart';
 import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 
+import 'editable_text.dart';
 import 'editable_box.dart';
+import 'editor.dart';
 
 // md5 加密
 String generateMd5(String data) {
@@ -72,10 +74,9 @@ class ZefyrGoodsModel {
 }
 
 class ZefyrGoods extends StatefulWidget {
-  const ZefyrGoods({Key key, @required this.node})
-      : super(key: key);
+  const ZefyrGoods({Key key, @required this.node}) : super(key: key);
 
-  // 是否编辑状态
+  //
   final EmbedNode node;
 
   @override
@@ -83,56 +84,482 @@ class ZefyrGoods extends StatefulWidget {
 }
 
 class _ZefyrGoodsState extends State<ZefyrGoods> {
-  String get imageSource {
+  ZefyrGoodsModel get goodsSource {
     EmbedAttribute attribute = widget.node.style.get(NotusAttribute.embed);
-    return attribute.value['source'];
+    return ZefyrGoodsModel.fromJson(attribute.value['source']);
   }
 
   @override
   Widget build(BuildContext context) {
     return _EditableGoods(
-        child: Container(
-          height: 132.0,
-          width: 130.0,
-          alignment: Alignment.center,
-          color: Colors.amberAccent,
-          child: GestureDetector(
-            onTap: () {
-              showDialog(
-                  context: context,
-                  builder: (context) {
-                    final TextEditingController _controller =
-                        new TextEditingController();
-                    return Scaffold(
-                      body: Column(
-                        children: <Widget>[
-                          TextField(
-                            controller: _controller,
-                            autofocus: true,
-                            decoration: new InputDecoration(
-                              hintText: '搜索商品标题、链接【淘宝、天猫、拼多多】',
-                            ),
-                          ),
-                          Align(
-                            child: Container(),
-                          )
-                        ],
-                      ),
-                    );
-                  });
-            },
-            child: Container(
-              child: Text(
-                "编辑",
-                style: TextStyle(color: Colors.white),
-              ),
-              color: Colors.black,
-              padding: EdgeInsets.all(20.0),
-            ),
-          ),
+        child: ArticleGoods(
+          goods: goodsSource,
         ),
         node: widget.node);
   }
+}
+
+class ArticleGoods extends StatefulWidget {
+  final ZefyrGoodsModel goods;
+
+  ArticleGoods({Key key, this.goods}) : super(key: key);
+
+  @override
+  _ArticleGoodsState createState() => new _ArticleGoodsState();
+}
+
+class _ArticleGoodsState extends State<ArticleGoods> {
+  GoodsUnion _union;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+  }
+
+  String getImgurl() {
+    String src = widget.goods.thumbs[0];
+    if (src.indexOf("alicdn.com") > -1) {
+      return "https:${src}_350x350q90.jpg_.webp";
+    } else if (src.indexOf("yangkeduo.com") > -1) {
+      if (src.indexOf("?imageMogr2") > -1) {
+        return "https:${src.split("?")[0]}?imageMogr2/sharpen/1%7CimageView2/2/w/300/q/70/format/webp";
+      } else {
+        return "https:${src}?imageMogr2/sharpen/1%7CimageView2/2/w/300/q/70/format/webp";
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = ZefyrEditableText.of(context).enabled;
+    final size = MediaQuery.of(context).size;
+    final widgetWidget = size.width - 24.0;
+    final radius = BorderRadius.all(Radius.circular(12.0));
+    final imgSize = widgetWidget * 0.36;
+    return Container(
+      width: widgetWidget,
+      decoration: BoxDecoration(borderRadius: radius, color: Colors.grey[100]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            padding: EdgeInsets.all(6.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                ClipRRect(
+                  borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                  child: Image.network(
+                    getImgurl(),
+                    width: imgSize,
+                    height: imgSize,
+                  ),
+                ),
+                SizedBox(
+                  width: widgetWidget - imgSize - 24.0 - 6.0,
+                  height: imgSize,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Container(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              widget.goods.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 14, fontWeight: FontWeight.bold),
+                            ),
+                            Container(height: 2.0),
+                            Text(
+                              widget.goods.subtitle == null
+                                  ? ""
+                                  : widget.goods.subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red[600]),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            enabled == true
+                                ? Container(
+                                    color: Colors.grey[200],
+                                    child: Text(
+                                      " 券、奖励金实时查询 ",
+                                      style: TextStyle(fontSize: 10),
+                                    ),
+                                  )
+                                : getUnion(),
+                            Container(height: 4.0),
+                            Text(
+                              "¥" + widget.goods.price,
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red[600]),
+                            ),
+                            Text(
+                              "销量: ${widget.goods.volume}件",
+                              style:
+                                  TextStyle(fontSize: 10, color: Colors.black),
+                            )
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          ),
+          widget.goods.content.isEmpty == false
+              ? Container(height: 1.0, color: Colors.white)
+              : Container(),
+          widget.goods.content.isEmpty == false
+              ? Container(
+                  padding: EdgeInsets.all(10.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        "小编推荐理由",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      Container(height: 4.0),
+                      Text(
+                        widget.goods.content,
+                        style: TextStyle(fontSize: 13.0),
+                      )
+                    ],
+                  ),
+                )
+              : Container()
+        ],
+      ),
+    );
+  }
+
+  // 获取券、奖励金数据
+  Widget getUnion() {
+    return FutureBuilder(
+      future: _apiUnion(),
+      initialData: null,
+      builder: (context, snapshot) {
+        if (snapshot.data is GoodsUnion) {
+          final GoodsUnion _union = snapshot.data;
+          return Container(
+            child: Row(
+              children: <Widget>[
+                _union.coupon == 0
+                    ? Container()
+                    : Container(
+                        padding: EdgeInsets.symmetric(
+                            vertical: 2.0, horizontal: 6.0),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                              colors: [Color(0xffcd0000), Color(0xffff0054)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight),
+                        ),
+                        child: Text(
+                          "券" + _union.couponText,
+                          style: TextStyle(color: Colors.white, fontSize: 10),
+                        ),
+                      ),
+                _union.commision == 0
+                    ? Container()
+                    : Container(
+                        padding: EdgeInsets.symmetric(
+                            vertical: 2.0, horizontal: 6.0),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                              colors: [Color(0xffFFC850), Color(0xffffe9b3)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight),
+                        ),
+                        child: Text(
+                          "奖励金" + _union.commisionText,
+                          style:
+                              TextStyle(color: Color(0xffb85400), fontSize: 10),
+                        ),
+                      ),
+              ],
+            ),
+          );
+        } else {
+          return Container();
+        }
+      },
+    );
+  }
+
+  Future<GoodsUnion> _apiUnion() async {
+    Uri apihost = ZefyrEditor.of(context).apihost;
+    if (widget.goods.platform == "pinduoduo") {
+      if (GoodsUnion.cache["pinduoduo_${widget.goods.id}"] != null) {
+        return Future.value(GoodsUnion.cache["pinduoduo_${widget.goods.id}"]);
+      }
+      try {
+        HttpClient httpClient = HttpClient();
+        final request = await httpClient.getUrl(Uri(
+          scheme: apihost.scheme,
+          host: apihost.host,
+          port: apihost.port,
+          path: "/api/2.0/api.pinduoduo.detail",
+          queryParameters: {"ids": widget.goods.id.toString()},
+        ));
+        var response = await request.close();
+        var responseBody = await response.transform(utf8.decoder).join();
+        final Map<String, dynamic> jsonData = json.decode(responseBody);
+        if (jsonData["errcode"] != 200) {
+          return Future.error(jsonData['msg']);
+        }
+        final params = jsonData["data"]['params'];
+        final url = jsonData["data"]['url'];
+//        final method = jsonData["method"]['method'];
+        final postReq = await httpClient.postUrl(Uri.parse(url));
+        // 拼多多接口适用POST方式
+        postReq.headers
+            .add("Content-Type", "application/x-www-form-urlencoded");
+        postReq.write(params);
+        final resp = await postReq.close();
+        final responseBodya = await resp.transform(utf8.decoder).join();
+        final respJson = json.decode(responseBodya) as Map<String, dynamic>;
+        if (respJson['error_response'] != null) {
+          return Future.error("拼多多数据接口访问失败");
+        } else {
+          final detail = respJson['goods_detail_response'];
+          return Future.value(
+            GoodsUnion.pinduoduo(
+              id: widget.goods.id,
+              price: detail['min_group_price'],
+              coupon: detail['coupon_min_order_amount'],
+              commision: detail['promotion_rate'],
+            ),
+          );
+        }
+      } catch (e) {
+        return Future.error("拼多多数据接口访问失败");
+      }
+    } else {
+      if (GoodsUnion.cache["taobao_${widget.goods.id}"] != null) {
+        return Future.value(GoodsUnion.cache["taobao_${widget.goods.id}"]);
+      }
+      try {
+        HttpClient httpClient = HttpClient();
+        final request = await httpClient.getUrl(Uri(
+          scheme: apihost.scheme,
+          host: apihost.host,
+          port: apihost.port,
+          path: "/api/2.0/api.taobao.convert",
+          queryParameters: {"id": widget.goods.id.toString()},
+        ));
+        var response = await request.close();
+        var responseBody = await response.transform(utf8.decoder).join();
+        final Map<String, dynamic> jsonData = json.decode(responseBody);
+        if (jsonData["errcode"] != 200) {
+          return Future.error(jsonData['msg']);
+        }
+        final params = jsonData["data"]['params'];
+        final url = jsonData["data"]['url'];
+//        final method = jsonData["method"]['method'];
+        final postReq = await httpClient.postUrl(Uri.parse(url));
+        // 淘宝接口适用POST方式
+        postReq.headers
+            .add("Content-Type", "application/x-www-form-urlencoded");
+        postReq.write(params);
+        final resp = await postReq.close();
+        final responseBodya = await resp.transform(utf8.decoder).join();
+        final respJson = json.decode(responseBodya) as Map<String, dynamic>;
+        if (respJson['error_response'] != null) {
+          return Future.error(respJson['error_response']['sub_msg']);
+        } else {
+          final detail =
+              respJson['tbk_coupon_convert_response']['result']['results'];
+          return Future.value(
+            GoodsUnion.taobao(
+              id: widget.goods.id,
+              price: double.parse(widget.goods.price.split("-")[0]),
+              couponInfo: detail['coupon_info'],
+              commision: double.parse(
+                detail['max_commission_rate'],
+              ),
+              click: detail['coupon_info'] == null
+                  ? detail['item_url']
+                  : detail['coupon_click_url'],
+              apihost: apihost,
+            ),
+          );
+        }
+      } catch (e) {
+        return Future.error("淘宝数据接口访问失败");
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+  }
+}
+
+class GoodsUnion {
+  final int id;
+  // 优惠券描述
+  double coupon;
+  // 佣金比例
+  double commision;
+  // 当前价格
+  final double price;
+  // 内部存储点击链接，使用 .url 访问；
+  String click;
+
+  bool isPdd;
+  final Uri apihost;
+
+  static Map<String, GoodsUnion> cache = new Map<String, GoodsUnion>();
+
+  factory GoodsUnion.taobao(
+      {@required int id,
+      @required double price,
+      @required String couponInfo,
+      @required double commision,
+      @required String click,
+      Uri apihost}) {
+    if (GoodsUnion.cache["taobao_$id"] == null) {
+      GoodsUnion.cache["taobao_$id"] = GoodsUnion._taobao(
+        id: id,
+        price: price,
+        couponInfo: couponInfo,
+        commision: commision,
+        click: click,
+        apihost: apihost,
+      );
+    }
+
+    return GoodsUnion.cache["taobao_$id"];
+  }
+
+  GoodsUnion._taobao(
+      {@required this.id,
+      @required this.price,
+      @required String couponInfo,
+      @required double commision,
+      @required this.click,
+      this.apihost}) {
+    // 淘宝转链接口返回的是百分比
+    this.commision = commision / 100;
+
+    // 如果 couponInfo 是空的则不做券处理
+    if (couponInfo != null && couponInfo.indexOf("减") > -1) {
+      // 通过正则提取优惠券描述数字数字最小的是券面额
+      final _a = RegExp(r"(\d+)").allMatches(couponInfo).map((item) {
+        return double.parse(item.group(1));
+      }).toList();
+      this.coupon = math.min(_a[0], _a[1]);
+    } else {
+      this.coupon = 0.0;
+    }
+  }
+
+  factory GoodsUnion.pinduoduo(
+      {@required int id,
+      @required double price,
+      @required int coupon,
+      @required int commision,
+      @required String click,
+      Uri apihost}) {
+    if (GoodsUnion.cache["pinduoduo_$id"] == null) {
+      GoodsUnion.cache["pinduoduo_$id"] = GoodsUnion._pinduoduo(
+        id: id,
+        price: price,
+        coupon: coupon,
+        commision: commision,
+        click: click,
+        apihost: apihost,
+      );
+    }
+
+    return GoodsUnion.cache["pinduoduo_$id"];
+  }
+
+  GoodsUnion._pinduoduo({
+    @required this.id,
+    @required this.price,
+    @required int coupon,
+    @required int commision,
+    this.click,
+    @required this.apihost,
+  }) {
+    isPdd = true;
+    // 拼多多返回的券面额单位是：分
+    this.coupon = coupon / 100;
+    this.commision = commision / 1000;
+  }
+
+  Future<String> url() async {
+    if (isPdd == true && (click == null || click == "")) {
+      try {
+        HttpClient httpClient = HttpClient();
+        final request = await httpClient.getUrl(Uri(
+          scheme: apihost.scheme,
+          host: apihost.host,
+          port: apihost.port,
+          path: "/api/2.0/api.pinduoduo.convert",
+          queryParameters: {"id": id},
+        ));
+        var response = await request.close();
+        var responseBody = await response.transform(utf8.decoder).join();
+        final Map<String, dynamic> jsonData = json.decode(responseBody);
+        if (jsonData["errcode"] != 200) {
+          return Future.error(jsonData['msg']);
+        }
+        final params = jsonData["data"]['params'];
+        final url = jsonData["data"]['url'];
+//        final method = jsonData["method"]['method'];
+        final postReq = await httpClient.postUrl(Uri.parse(url));
+        // 淘宝接口适用POST方式
+        postReq.headers
+            .add("Content-Type", "application/x-www-form-urlencoded");
+        postReq.write(params);
+        final resp = await postReq.close();
+        final responseBodya = await resp.transform(utf8.decoder).join();
+        final respJson = json.decode(responseBodya) as Map<String, dynamic>;
+        if (respJson['error_response'] != null) {
+          return Future.error(respJson['error_response']['sub_msg']);
+        } else {
+          return respJson['goods_zs_unit_generate_response']['mobile_url'];
+        }
+      } catch (e) {
+        return Future.error("淘宝数据接口访问失败");
+      }
+    }
+    return Future.value(click);
+  }
+
+  // 获取优惠券描述
+  String get couponText => "${coupon.toStringAsFixed(0)}元";
+
+  // 获取佣金描述
+  String get commisionText =>
+      "${((this.price - this.coupon) * this.commision).toStringAsFixed(2)}块";
 }
 
 class _EditableGoods extends SingleChildRenderObjectWidget {
@@ -291,7 +718,7 @@ class RenderEditableGoods extends RenderBox
         minWidth: 0.0,
         maxWidth: width,
         minHeight: 0.0,
-        maxHeight: (width * 9 / 16).floorToDouble(),
+//        maxHeight: (width * 9 / 16).floorToDouble(),
       );
       child.layout(childConstraints, parentUsesSize: true);
       _lastChildSize = child.size;
@@ -308,7 +735,8 @@ class GoodsEditer extends StatefulWidget {
   final ZefyrGoodsModel goodsModel;
   final OnSelectGoods onSelectGoods;
 
-  GoodsEditer({Key key, this.goodsModel, @required this.onSelectGoods}) : super(key: key);
+  GoodsEditer({Key key, this.goodsModel, @required this.onSelectGoods})
+      : super(key: key);
 
   @override
   _GoodsEditerState createState() => new _GoodsEditerState();
@@ -325,7 +753,7 @@ class _GoodsEditerState extends State<GoodsEditer> {
     setState(() {
       _goodsModel = widget.goodsModel;
       editingController = TextEditingController(text: _goodsModel?.content);
-      editingController.addListener((){
+      editingController.addListener(() {
         _goodsModel.content = editingController.text;
       });
     });
@@ -384,8 +812,11 @@ class _GoodsEditerState extends State<GoodsEditer> {
                           Text("2、拼多多、感恩购商品输入商品链接"),
                           Text("2、未开启淘宝联盟推广与多多进宝的商品无法获得佣金提成"),
                           Container(height: 12.0),
-                          Text("如何获得拼多多商品链接？", style: TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold),),
+                          Text(
+                            "如何获得拼多多商品链接？",
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
                           Container(height: 10.0),
                           Text("1、将拼多多分享到微信，并在微信上打开"),
                           Text("2、进入微信网页后通过 【菜单 -> 复制链接】获取"),
@@ -402,22 +833,26 @@ class _GoodsEditerState extends State<GoodsEditer> {
             ),
             label: Text(
               "确定",
-              style: TextStyle(color: _goodsModel == null ? Colors.grey[200] : Colors.white),
+              style: TextStyle(
+                  color: _goodsModel == null ? Colors.grey[200] : Colors.white),
             ),
-            onPressed: _goodsModel == null ? null : () {
-              if (widget.onSelectGoods != null) {
-                Navigator.pop(context);
-                widget.onSelectGoods(_goodsModel);
-              }
-            },
+            onPressed: _goodsModel == null
+                ? null
+                : () {
+                    if (widget.onSelectGoods != null) {
+                      Navigator.pop(context);
+                      widget.onSelectGoods(_goodsModel);
+                    }
+                  },
           )
         ],
         bottom: _SearchBar(
           onCancel: () {},
           onSearch: (keyword) async {
             try {
-              final apiGoodsService = ApiGoodsService(keyword);
-              if (apiGoodsService.verify() == false) {
+              final apiGoodsSearchService = ApiGoodsSearchService(
+                  keyword, ZefyrEditor.of(context).apihost);
+              if (apiGoodsSearchService.verify() == false) {
                 showModalBottomSheet(
                     context: context,
                     builder: (context) {
@@ -432,7 +867,7 @@ class _GoodsEditerState extends State<GoodsEditer> {
                       );
                     }).timeout(Duration(seconds: 2));
               } else {
-                final goods = await apiGoodsService.getData();
+                final goods = await apiGoodsSearchService.getData();
                 setState(() {
                   _goodsModel = goods;
                 });
@@ -478,12 +913,12 @@ class _GoodsEditerState extends State<GoodsEditer> {
                 height: imgSize,
                 color: Colors.grey[200],
                 margin: EdgeInsets.all(12.0),
-                child: Image.network("https:" + _goodsModel.thumbs[0], width: imgSize, height: imgSize),
+                child: Image.network("https:" + _goodsModel.thumbs[0],
+                    width: imgSize, height: imgSize),
               ),
               Container(
                 width: (size.width - imgSize - 24.0),
-                padding:
-                EdgeInsets.only(right: 12.0, top: 12.0, bottom: 12.0),
+                padding: EdgeInsets.only(right: 12.0, top: 12.0, bottom: 12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -492,9 +927,25 @@ class _GoodsEditerState extends State<GoodsEditer> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Text(_goodsModel.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),),
+                          Text(
+                            _goodsModel.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
                           Container(height: 6.0),
-                          Text(_goodsModel.subtitle == null ? "" : _goodsModel.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red[600]),),
+                          Text(
+                            _goodsModel.subtitle == null
+                                ? ""
+                                : _goodsModel.subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red[600]),
+                          ),
                         ],
                       ),
                     ),
@@ -504,12 +955,24 @@ class _GoodsEditerState extends State<GoodsEditer> {
                         children: <Widget>[
                           Container(
                             color: Colors.grey[200],
-                            child: Text(" 券、奖励金实时查询 ", style: TextStyle(fontSize: 10),),
+                            child: Text(
+                              " 券、奖励金实时查询 ",
+                              style: TextStyle(fontSize: 10),
+                            ),
                           ),
                           Container(height: 4.0),
-                          Text("¥" + _goodsModel.price, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red[600]),),
+                          Text(
+                            "¥" + _goodsModel.price,
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red[600]),
+                          ),
                           Container(height: 4.0),
-                          Text("销量: ${_goodsModel.volume}件", style: TextStyle(fontSize: 12, color: Colors.grey),)
+                          Text(
+                            "销量: ${_goodsModel.volume}件",
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          )
                         ],
                       ),
                     ),
@@ -534,7 +997,10 @@ class _GoodsEditerState extends State<GoodsEditer> {
         ),
         Container(
           padding: EdgeInsets.all(12.0),
-          child: Text("认真编辑才能获得更多的官方推荐", style: TextStyle(fontSize: 12),),
+          child: Text(
+            "认真编辑才能获得更多的官方推荐",
+            style: TextStyle(fontSize: 12),
+          ),
         ),
       ],
     );
@@ -559,8 +1025,7 @@ class _GoodsEditerState extends State<GoodsEditer> {
                 margin: EdgeInsets.all(12.0),
               ),
               Container(
-                padding:
-                EdgeInsets.only(right: 12.0, top: 12.0, bottom: 12.0),
+                padding: EdgeInsets.only(right: 12.0, top: 12.0, bottom: 12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -760,18 +1225,19 @@ class _SearchBarState extends State<_SearchBar> {
             ),
           ),
           InkWell(
-            onTap: _queryTextController.text.isEmpty == false && loading == false
-                ? () {
-                    setState(() {
-                      loading = true;
-                    });
-                    widget.onSearch(_queryTextController.text).then((t){
-                      setState(() {
-                        loading = false;
-                      });
-                    });
-                  }
-                : null,
+            onTap:
+                _queryTextController.text.isEmpty == false && loading == false
+                    ? () {
+                        setState(() {
+                          loading = true;
+                        });
+                        widget.onSearch(_queryTextController.text).then((t) {
+                          setState(() {
+                            loading = false;
+                          });
+                        });
+                      }
+                    : null,
             child: Container(
               width: 88.0,
               height: 38.0,
@@ -808,10 +1274,11 @@ class _SearchBarState extends State<_SearchBar> {
 enum GoodsTypes { taobao, tmall, pinduoduo }
 
 /// 获取淘宝、天猫、拼多多商品详情
-class ApiGoodsService {
+class ApiGoodsSearchService {
   final String url;
+  final Uri apihost;
 
-  ApiGoodsService(this.url);
+  ApiGoodsSearchService(this.url, this.apihost);
 
   GoodsTypes _type;
   GoodsTypes get type => _type;
@@ -840,8 +1307,8 @@ class ApiGoodsService {
   Future<int> getKouling() async {
     HttpClient httpClient = new HttpClient();
     final request = await httpClient.getUrl(Uri(
-        scheme: "http",
-        host: "192.168.1.2",
+        scheme: apihost.scheme,
+        host: apihost.host,
         port: 5928,
         path: "/api/2.0/api.taobao.kouling",
         queryParameters: {"data": url}));
@@ -852,7 +1319,8 @@ class ApiGoodsService {
       return Future.error(jsonData['msg']);
     }
 //    print(jsonData['data']);
-    if ((jsonData['data'] as Map<String, dynamic>).containsKey("native_url") == false) {
+    if ((jsonData['data'] as Map<String, dynamic>).containsKey("native_url") ==
+        false) {
       return Future.error("无效的淘口令");
     }
     if ((jsonData['data']['native_url'] as String).indexOf("m.taobao.com%2Fi") >
