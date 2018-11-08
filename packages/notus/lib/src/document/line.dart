@@ -319,7 +319,6 @@ class LineNode extends ContainerNode<LeafNode>
     assert(index == 0 || (index > 0 && index < length));
     assert(text.contains('\n') == false);
     if (text.isEmpty) return;
-
     if (isEmpty) {
       final child = new LeafNode(text);
       add(child);

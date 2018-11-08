@@ -30,6 +30,7 @@ enum ZefyrToolbarAction {
   quote,
   horizontalRule,
   image,
+  goods,
   cameraImage,
   galleryImage,
   hideKeyboard,
@@ -50,6 +51,7 @@ final kZefyrToolbarAttributeActions = <ZefyrToolbarAction, NotusAttributeKey>{
   ZefyrToolbarAction.code: NotusAttribute.block.code,
   ZefyrToolbarAction.quote: NotusAttribute.block.quote,
   ZefyrToolbarAction.horizontalRule: NotusAttribute.embed.horizontalRule,
+  ZefyrToolbarAction.goods: NotusAttribute.embed.goods({}),
 };
 
 /// Allows customizing appearance of [ZefyrToolbar].
@@ -102,15 +104,13 @@ class ZefyrToolbar extends StatefulWidget implements PreferredSizeWidget {
 
   const ZefyrToolbar({
     Key key,
-    @required this.focusNode,
-    @required this.controller,
+    @required this.editor,
     this.autoHide: true,
     this.delegate,
   }) : super(key: key);
 
-  final FocusNode focusNode;
-  final ZefyrController controller;
   final ZefyrToolbarDelegate delegate;
+  final ZefyrEditorScope editor;
 
   /// Whether to automatically hide this toolbar when editor loses focus.
   final bool autoHide;
@@ -153,7 +153,12 @@ class ZefyrToolbarState extends State<ZefyrToolbar>
   TextSelection _selection;
 
   void markNeedsRebuild() {
-    setState(() {});
+    setState(() {
+      if (_selection != editor.selection) {
+        _selection = editor.selection;
+        closeOverlay();
+      }
+    });
   }
 
   Widget buildButton(BuildContext context, ZefyrToolbarAction action,
@@ -185,12 +190,15 @@ class ZefyrToolbarState extends State<ZefyrToolbar>
 
   bool get hasOverlay => _overlayBuilder != null;
 
+  ZefyrEditorScope get editor => widget.editor;
+
   @override
   void initState() {
     super.initState();
     _delegate = widget.delegate ?? new _DefaultZefyrToolbarDelegate();
     _overlayAnimation = new AnimationController(
         vsync: this, duration: Duration(milliseconds: 100));
+    _selection = editor.selection;
   }
 
   @override
@@ -202,23 +210,13 @@ class ZefyrToolbarState extends State<ZefyrToolbar>
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final editor = ZefyrEditor.of(context);
-    if (_selection != editor.selection) {
-      _selection = editor.selection;
-      closeOverlay();
-    }
+  void dispose() {
+    _overlayAnimation.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final editor = ZefyrEditor.of(context);
-
-    if (editor.focusOwner == FocusOwner.none) {
-      return new Container();
-    }
-
     final layers = <Widget>[];
 
     // Must set unique key for the toolbar to prevent it from reconstructing
@@ -244,7 +242,7 @@ class ZefyrToolbarState extends State<ZefyrToolbar>
 
     final constraints =
         BoxConstraints.tightFor(height: ZefyrToolbar.kToolbarHeight);
-    return new _ZefyrToolbarScope(
+    return _ZefyrToolbarScope(
       toolbar: this,
       child: Container(
         constraints: constraints,
@@ -264,6 +262,7 @@ class ZefyrToolbarState extends State<ZefyrToolbar>
       buildButton(context, ZefyrToolbarAction.quote),
       buildButton(context, ZefyrToolbarAction.code),
       buildButton(context, ZefyrToolbarAction.horizontalRule),
+      GoodsButton(),
       ImageButton(),
     ];
     return buttons;
@@ -353,6 +352,7 @@ class _DefaultZefyrToolbarDelegate implements ZefyrToolbarDelegate {
     ZefyrToolbarAction.quote: Icons.format_quote,
     ZefyrToolbarAction.horizontalRule: Icons.remove,
     ZefyrToolbarAction.image: Icons.photo,
+    ZefyrToolbarAction.goods: Icons.shopping_cart,
     ZefyrToolbarAction.cameraImage: Icons.photo_camera,
     ZefyrToolbarAction.galleryImage: Icons.photo_library,
     ZefyrToolbarAction.hideKeyboard: Icons.keyboard_hide,

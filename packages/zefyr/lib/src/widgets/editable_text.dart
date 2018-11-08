@@ -20,6 +20,7 @@ import 'paragraph.dart';
 import 'quote.dart';
 import 'render_context.dart';
 import 'selection.dart';
+import 'gestures.dart';
 
 /// Core widget responsible for editing Zefyr documents.
 ///
@@ -33,9 +34,11 @@ class ZefyrEditableText extends StatefulWidget {
     @required this.controller,
     @required this.focusNode,
     @required this.imageDelegate,
+    @required this.gesturesDelegate,
     this.autofocus: true,
     this.enabled: true,
     this.padding: const EdgeInsets.symmetric(horizontal: 16.0),
+    this.physics,
   }) : super(key: key);
 
   final ZefyrController controller;
@@ -43,6 +46,8 @@ class ZefyrEditableText extends StatefulWidget {
   final ZefyrImageDelegate imageDelegate;
   final bool autofocus;
   final bool enabled;
+  final ScrollPhysics physics;
+  final ZefyrGesturesDelegate gesturesDelegate;
 
   /// Padding around editable area.
   final EdgeInsets padding;
@@ -64,6 +69,7 @@ class ZefyrEditableTextScope extends InheritedWidget {
   ZefyrEditableTextScope({
     Key key,
     @required Widget child,
+    @required this.enabled,
     @required this.selection,
     @required this.showCursor,
     @required this.renderContext,
@@ -71,6 +77,8 @@ class ZefyrEditableTextScope extends InheritedWidget {
   })  : _activeBoxes = new Set.from(renderContext.active),
         super(key: key, child: child);
 
+
+  final bool enabled;
   final TextSelection selection;
   final ValueNotifier<bool> showCursor;
   final ZefyrRenderContext renderContext;
@@ -132,8 +140,7 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText>
       body = new Padding(padding: widget.padding, child: body);
     }
     final scrollable = SingleChildScrollView(
-      padding: EdgeInsets.only(top: 16.0),
-      physics: AlwaysScrollableScrollPhysics(),
+      physics: widget.physics,
       controller: _scrollController,
       child: body,
     );
@@ -146,11 +153,19 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText>
         controls: cupertinoTextSelectionControls,
         overlay: overlay,
       ));
+    }else {
+      layers.add(GesturesOverlay(
+        controller: widget.controller,
+        controls: cupertinoTextSelectionControls,
+        overlay: overlay,
+        gesturesDelegate: widget.gesturesDelegate,
+      ));
     }
 
     return new ZefyrEditableTextScope(
       selection: selection,
       showCursor: showCursor,
+      enabled: widget.enabled, // 方便其他组件访问是否编辑状态
       renderContext: renderContext,
       imageDelegate: widget.imageDelegate,
       child: Stack(fit: StackFit.expand, children: layers),

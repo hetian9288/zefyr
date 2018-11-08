@@ -1,9 +1,24 @@
-## 0.1.3
+## 0.3.0
+
+This version introduces new widget `ZefyrScaffold` which allows embedding Zefyr in custom
+layouts, like forms with multiple input fields.
+
+It is now required to always wrap `ZefyrEditor` with an instance of this new widget. See examples
+and readme for more details.
+
+There is also new `ZefyrField` widget which integrates Zefyr with material design decorations.
+
+* Breaking change: `ZefyrEditor` requires an ancestor `ZefyrScaffold`.
+* Exposed `ZefyrEditor.physics` property to allow customization of `ScrollPhysics`.
+* Added basic `ZefyrField` widget.
+
+## 0.2.0
 
 * Breaking change: `ZefyrImageDelegate.createImageProvider` replaced with
   `ZefyrImageDelegate.buildImage`.
 * Fixed redundant updates on composing range for Android.
 * Added TextCapitalization.sentences
+* Added docs for embedding images.
 
 ## 0.1.2
 
