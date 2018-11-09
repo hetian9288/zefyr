@@ -11,7 +11,7 @@ import 'scaffold.dart';
 import 'theme.dart';
 import 'toolbar.dart';
 import 'gestures.dart';
-import 'goods.dart' show GoodsUnion;
+import 'goods.dart' show GoodsUnion, ApiGoodsUnionService;
 
 class ZefyrEditorScope extends ChangeNotifier {
   ZefyrEditorScope({
@@ -308,6 +308,7 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
     _scope.dispose();
     // 清理商品缓存
     GoodsUnion.cache.clear();
+    ApiGoodsUnionService.cache.clear();
     super.dispose();
   }
 
