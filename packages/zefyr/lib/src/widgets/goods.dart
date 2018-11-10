@@ -50,7 +50,7 @@ class ZefyrGoodsModel {
 
   ZefyrGoodsModel.fromJson(Map<String, dynamic> json) {
     id = json['id'];
-    thumbs = json['thumbs'].cast<String>();
+    thumbs = json['thumbs'] != null ? (json['thumbs'] as List<dynamic>).cast<String>() : null;
     platform = json['platform'];
     title = json['title'];
     subtitle = json['subtitle'];
@@ -94,6 +94,8 @@ class _ZefyrGoodsState extends State<ZefyrGoods> {
     return _EditableGoods(
         child: ArticleGoods(
           goods: goodsSource,
+          apihost: ZefyrEditor.of(context).apihost,
+          enabled: ZefyrEditableText.of(context).enabled,
         ),
         node: widget.node);
   }
@@ -101,23 +103,38 @@ class _ZefyrGoodsState extends State<ZefyrGoods> {
 
 class ArticleGoods extends StatefulWidget {
   final ZefyrGoodsModel goods;
+  final Uri apihost;
+  final bool enabled;
 
-  ArticleGoods({Key key, this.goods}) : super(key: key);
+
+  ArticleGoods({Key key, this.goods, this.apihost, this.enabled}) : super(key: key);
 
   @override
   _ArticleGoodsState createState() => new _ArticleGoodsState();
 }
 
 class _ArticleGoodsState extends State<ArticleGoods> {
+
   GoodsUnion _union;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    if (widget.enabled == false) {
+      final goodsUnionService = ApiGoodsUnionService(goods: widget.goods, apihost: widget.apihost);
+      goodsUnionService.union.last.then((goodsUnion){
+        setState((){
+          _union = goodsUnion;
+        });
+      });
+    }
   }
 
   String getImgurl() {
+    if (widget.goods.thumbs == null || widget.goods.thumbs.length <= 0) {
+      return null;
+    }
     String src = widget.goods.thumbs[0];
     if (src.indexOf("alicdn.com") > -1) {
       return "https:${src}_350x350q90.jpg_.webp";
@@ -132,7 +149,7 @@ class _ArticleGoodsState extends State<ArticleGoods> {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = ZefyrEditableText.of(context).enabled;
+    final enabled = widget.enabled;
     final size = MediaQuery.of(context).size;
     final widgetWidget = size.width - 24.0;
     final radius = BorderRadius.all(Radius.circular(12.0));
@@ -257,72 +274,94 @@ class _ArticleGoodsState extends State<ArticleGoods> {
 
   // 获取券、奖励金数据
   Widget getUnion() {
-    return FutureBuilder(
-      future: _apiUnion(),
-      initialData: null,
-      builder: (context, snapshot) {
-        if (snapshot.data is GoodsUnion) {
-          final GoodsUnion _union = snapshot.data;
-          return Container(
-            child: Row(
-              children: <Widget>[
-                _union.coupon == 0
-                    ? Container()
-                    : Container(
-                        padding: EdgeInsets.symmetric(
-                            vertical: 2.0, horizontal: 6.0),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                              colors: [Color(0xffcd0000), Color(0xffff0054)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight),
-                        ),
-                        child: Text(
-                          "券" + _union.couponText,
-                          style: TextStyle(color: Colors.white, fontSize: 10),
-                        ),
-                      ),
-                _union.commision == 0
-                    ? Container()
-                    : Container(
-                        padding: EdgeInsets.symmetric(
-                            vertical: 2.0, horizontal: 6.0),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                              colors: [Color(0xffFFC850), Color(0xffffe9b3)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight),
-                        ),
-                        child: Text(
-                          "奖励金" + _union.commisionText,
-                          style:
-                              TextStyle(color: Color(0xffb85400), fontSize: 10),
-                        ),
-                      ),
-              ],
+    if (_union != null) {
+      return Row(
+        children: <Widget>[
+          _union.coupon == 0
+                  ? Container()
+                  : ClipRRect(
+            borderRadius: BorderRadius.horizontal(left: Radius.circular(3)),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                      vertical: 2.0, horizontal: 6.0),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                        colors: [Color(0xffcd0000), Color(0xffff0054)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight),
+              ),
+              child: Text(
+                "券" + _union.couponText,
+                style: TextStyle(color: Colors.white, fontSize: 10),
+              ),
             ),
-          );
-        } else {
-          return Container();
-        }
-      },
-    );
+          ),
+          _union.commision == 0
+                  ? Container()
+                  : ClipRRect(
+            borderRadius: BorderRadius.horizontal(right: Radius.circular(3)),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                      vertical: 2.0, horizontal: 6.0),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                        colors: [Color(0xffFFC850), Color(0xffffe9b3)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight),
+              ),
+              child: Text(
+                "奖励金" + _union.commisionText,
+                style:
+                TextStyle(color: Color(0xffb85400), fontSize: 10),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else {
+      return Container();
+    }
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+  }
+
+}
+
+class ApiGoodsUnionService{
+  final Uri apihost;
+  final ZefyrGoodsModel goods;
+  Stream<GoodsUnion> union;
+
+  static Map<String, ApiGoodsUnionService> cache = new Map<String, ApiGoodsUnionService>();
+
+  factory ApiGoodsUnionService({@required Uri apihost, @required ZefyrGoodsModel goods}) {
+    if (ApiGoodsUnionService.cache["${goods.platform}_${goods.id}"] == null) {
+      ApiGoodsUnionService.cache["${goods.platform}_${goods.id}"] = ApiGoodsUnionService._(apihost, goods);
+    }
+    return ApiGoodsUnionService.cache["${goods.platform}_${goods.id}"];
+  }
+
+  ApiGoodsUnionService._(this.apihost, this.goods){
+    union = _apiUnion().asStream();
   }
 
   Future<GoodsUnion> _apiUnion() async {
-    Uri apihost = ZefyrEditor.of(context).apihost;
-    if (widget.goods.platform == "pinduoduo") {
-      if (GoodsUnion.cache["pinduoduo_${widget.goods.id}"] != null) {
-        return Future.value(GoodsUnion.cache["pinduoduo_${widget.goods.id}"]);
+    HttpClient httpClient = HttpClient();
+    if (goods.platform == "pinduoduo") {
+      if (GoodsUnion.cache["pinduoduo_${goods.id}"] != null) {
+        return Future.value(GoodsUnion.cache["pinduoduo_${goods.id}"]);
       }
       try {
-        HttpClient httpClient = HttpClient();
         final request = await httpClient.getUrl(Uri(
           scheme: apihost.scheme,
           host: apihost.host,
           port: apihost.port,
           path: "/api/2.0/api.pinduoduo.detail",
-          queryParameters: {"ids": widget.goods.id.toString()},
+          queryParameters: {"ids": goods.id.toString()},
         ));
         var response = await request.close();
         var responseBody = await response.transform(utf8.decoder).join();
@@ -336,7 +375,7 @@ class _ArticleGoodsState extends State<ArticleGoods> {
         final postReq = await httpClient.postUrl(Uri.parse(url));
         // 拼多多接口适用POST方式
         postReq.headers
-            .add("Content-Type", "application/x-www-form-urlencoded");
+                .add("Content-Type", "application/x-www-form-urlencoded");
         postReq.write(params);
         final resp = await postReq.close();
         final responseBodya = await resp.transform(utf8.decoder).join();
@@ -347,7 +386,7 @@ class _ArticleGoodsState extends State<ArticleGoods> {
           final detail = respJson['goods_detail_response'];
           return Future.value(
             GoodsUnion.pinduoduo(
-              id: widget.goods.id,
+              id: goods.id,
               price: detail['min_group_price'],
               coupon: detail['coupon_min_order_amount'],
               commision: detail['promotion_rate'],
@@ -358,17 +397,16 @@ class _ArticleGoodsState extends State<ArticleGoods> {
         return Future.error("拼多多数据接口访问失败");
       }
     } else {
-      if (GoodsUnion.cache["taobao_${widget.goods.id}"] != null) {
-        return Future.value(GoodsUnion.cache["taobao_${widget.goods.id}"]);
+      if (GoodsUnion.cache["taobao_${goods.id}"] != null) {
+        return Future.value(GoodsUnion.cache["taobao_${goods.id}"]);
       }
       try {
-        HttpClient httpClient = HttpClient();
         final request = await httpClient.getUrl(Uri(
           scheme: apihost.scheme,
           host: apihost.host,
           port: apihost.port,
           path: "/api/2.0/api.taobao.convert",
-          queryParameters: {"id": widget.goods.id.toString()},
+          queryParameters: {"id": goods.id.toString()},
         ));
         var response = await request.close();
         var responseBody = await response.transform(utf8.decoder).join();
@@ -382,7 +420,7 @@ class _ArticleGoodsState extends State<ArticleGoods> {
         final postReq = await httpClient.postUrl(Uri.parse(url));
         // 淘宝接口适用POST方式
         postReq.headers
-            .add("Content-Type", "application/x-www-form-urlencoded");
+                .add("Content-Type", "application/x-www-form-urlencoded");
         postReq.write(params);
         final resp = await postReq.close();
         final responseBodya = await resp.transform(utf8.decoder).join();
@@ -391,18 +429,18 @@ class _ArticleGoodsState extends State<ArticleGoods> {
           return Future.error(respJson['error_response']['sub_msg']);
         } else {
           final detail =
-              respJson['tbk_coupon_convert_response']['result']['results'];
+          respJson['tbk_coupon_convert_response']['result']['results'];
           return Future.value(
             GoodsUnion.taobao(
-              id: widget.goods.id,
-              price: double.parse(widget.goods.price.split("-")[0]),
+              id: goods.id,
+              price: double.parse(goods.price.split("-")[0]),
               couponInfo: detail['coupon_info'],
               commision: double.parse(
                 detail['max_commission_rate'],
               ),
               click: detail['coupon_info'] == null
-                  ? detail['item_url']
-                  : detail['coupon_click_url'],
+                      ? detail['item_url']
+                      : detail['coupon_click_url'],
               apihost: apihost,
             ),
           );
@@ -411,12 +449,6 @@ class _ArticleGoodsState extends State<ArticleGoods> {
         return Future.error("淘宝数据接口访问失败");
       }
     }
-  }
-
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
   }
 }
 
@@ -734,8 +766,9 @@ class RenderEditableGoods extends RenderBox
 class GoodsEditer extends StatefulWidget {
   final ZefyrGoodsModel goodsModel;
   final OnSelectGoods onSelectGoods;
+  final Uri apihost;
 
-  GoodsEditer({Key key, this.goodsModel, @required this.onSelectGoods})
+  GoodsEditer({Key key, this.goodsModel, @required this.onSelectGoods, this.apihost})
       : super(key: key);
 
   @override
@@ -851,7 +884,7 @@ class _GoodsEditerState extends State<GoodsEditer> {
           onSearch: (keyword) async {
             try {
               final apiGoodsSearchService = ApiGoodsSearchService(
-                  keyword, ZefyrEditor.of(context).apihost);
+                  keyword, widget.apihost);
               if (apiGoodsSearchService.verify() == false) {
                 showModalBottomSheet(
                     context: context,

@@ -80,7 +80,7 @@ class ZefyrButton extends StatelessWidget {
         size: _iconSize,
         iconColor: iconColor,
         color: _getColor(editor, toolbarTheme),
-        onPressed: _getPressedHandler(editor, toolbar),
+        onPressed: pressedHandler,
       );
     } else {
       assert(_text != null);
@@ -90,7 +90,7 @@ class ZefyrButton extends StatelessWidget {
         action: action,
         child: new Text(_text, style: style),
         color: _getColor(editor, toolbarTheme),
-        onPressed: _getPressedHandler(editor, toolbar),
+        onPressed: pressedHandler,
       );
     }
   }
@@ -98,9 +98,20 @@ class ZefyrButton extends StatelessWidget {
   Color _getColor(ZefyrEditorScope editor, ZefyrToolbarTheme theme) {
     if (isAttributeAction) {
       final attribute = kZefyrToolbarAttributeActions[action];
-      final isToggled = (attribute is NotusAttribute)
-          ? editor.selectionStyle.containsSame(attribute)
-          : editor.selectionStyle.contains(attribute);
+      bool isToggled = false;
+      if (attribute is EmbedAttribute) {
+        final embed = editor.selectionStyle.get(NotusAttribute.embed);
+        if (embed != null && editor.selection.isCollapsed == false) {
+          isToggled = attribute.value["type"] == editor.selectionStyle.get(NotusAttribute.embed).value["type"];
+        }else{
+          isToggled = false;
+        }
+      }else{
+        isToggled = (attribute is NotusAttribute)
+                ? editor.selectionStyle.containsSame(attribute)
+                : editor.selectionStyle.contains(attribute);
+      }
+
       return isToggled ? theme.toggleColor : null;
     }
     return null;
@@ -113,6 +124,9 @@ class ZefyrButton extends StatelessWidget {
     } else if (isAttributeAction) {
       final attribute = kZefyrToolbarAttributeActions[action];
       if (attribute is NotusAttribute) {
+        if (attribute is EmbedAttribute && ['image', 'goods'].indexOf(attribute.value['type']) > -1) {
+          return null;
+        }
         return () => _toggleAttribute(attribute, editor);
       }
     } else if (action == ZefyrToolbarAction.close) {
@@ -249,18 +263,31 @@ class ImageButton extends StatefulWidget {
 }
 
 class _ImageButtonState extends State<ImageButton> {
+  TextSelection _editorSelection;
   @override
   Widget build(BuildContext context) {
     final toolbar = ZefyrToolbar.of(context);
+    bool show = true;
+    final embed = toolbar.editor.selectionStyle.get(NotusAttribute.embed);
+    if (embed != null && toolbar.editor.selection.isCollapsed == false){
+      final type = toolbar.editor.selectionStyle.get(NotusAttribute.embed).value["type"];
+      if (type != "image") {
+        show = false;
+      }
+    }
     return toolbar.buildButton(
       context,
       ZefyrToolbarAction.image,
-      onPressed: showOverlay,
+      onPressed: show ? showOverlay : null,
     );
   }
 
   void showOverlay() {
     final toolbar = ZefyrToolbar.of(context);
+    _editorSelection = null;
+    if (!toolbar.editor.selection.isCollapsed) {
+      _editorSelection = toolbar.editor.selection.copyWith();
+    }
     toolbar.showOverlay(buildOverlay);
   }
 
@@ -281,15 +308,23 @@ class _ImageButtonState extends State<ImageButton> {
   void _pickFromCamera() async {
     final editor = ZefyrToolbar.of(context).editor;
     final image = await editor.imageDelegate.pickImage(ImageSource.camera);
-    if (image != null)
+    if (image != null){
+      if (_editorSelection != null) {
+        editor.delSelection(_editorSelection);
+      }
       editor.formatSelection(NotusAttribute.embed.image(image));
+    }
   }
 
   void _pickFromGallery() async {
     final editor = ZefyrToolbar.of(context).editor;
     final image = await editor.imageDelegate.pickImage(ImageSource.gallery);
-    if (image != null)
+    if (image != null){
+      if (_editorSelection != null) {
+        editor.delSelection(_editorSelection);
+      }
       editor.formatSelection(NotusAttribute.embed.image(image));
+    }
   }
 }
 
@@ -597,10 +632,19 @@ class _GoodsButtonState extends State<GoodsButton> {
   @override
   Widget build(BuildContext context) {
     final toolbar = ZefyrToolbar.of(context);
+    bool show = true;
+    final embed = toolbar.editor.selectionStyle.get(NotusAttribute.embed);
+    if (embed != null && toolbar.editor.selection.isCollapsed == false){
+      final type = toolbar.editor.selectionStyle.get(NotusAttribute.embed).value["type"];
+      if (type != "goods") {
+        show = false;
+      }
+    }
+
     return toolbar.buildButton(
       context,
       ZefyrToolbarAction.goods,
-      onPressed: showOverlay,
+      onPressed: show ? showOverlay : null,
     );
   }
 
@@ -640,7 +684,7 @@ class _GoodsButtonState extends State<GoodsButton> {
           }
 
           editor.formatSelection(NotusAttribute.embed.goods(goods.toJson()));
-        },);
+        }, apihost: editor.apihost,);
       },
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
