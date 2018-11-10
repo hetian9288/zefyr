@@ -52,6 +52,7 @@ final kZefyrToolbarAttributeActions = <ZefyrToolbarAction, NotusAttributeKey>{
   ZefyrToolbarAction.quote: NotusAttribute.block.quote,
   ZefyrToolbarAction.horizontalRule: NotusAttribute.embed.horizontalRule,
   ZefyrToolbarAction.goods: NotusAttribute.embed.goods({}),
+  ZefyrToolbarAction.image: NotusAttribute.embed.image(""),
 };
 
 /// Allows customizing appearance of [ZefyrToolbar].

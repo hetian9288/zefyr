@@ -50,7 +50,7 @@ class ZefyrGoodsModel {
 
   ZefyrGoodsModel.fromJson(Map<String, dynamic> json) {
     id = json['id'];
-    thumbs = json['thumbs'].cast<String>();
+    thumbs = json['thumbs'] != null ? (json['thumbs'] as List<dynamic>).cast<String>() : null;
     platform = json['platform'];
     title = json['title'];
     subtitle = json['subtitle'];
@@ -132,6 +132,9 @@ class _ArticleGoodsState extends State<ArticleGoods> {
   }
 
   String getImgurl() {
+    if (widget.goods.thumbs == null || widget.goods.thumbs.length <= 0) {
+      return null;
+    }
     String src = widget.goods.thumbs[0];
     if (src.indexOf("alicdn.com") > -1) {
       return "https:${src}_350x350q90.jpg_.webp";
@@ -763,8 +766,9 @@ class RenderEditableGoods extends RenderBox
 class GoodsEditer extends StatefulWidget {
   final ZefyrGoodsModel goodsModel;
   final OnSelectGoods onSelectGoods;
+  final Uri apihost;
 
-  GoodsEditer({Key key, this.goodsModel, @required this.onSelectGoods})
+  GoodsEditer({Key key, this.goodsModel, @required this.onSelectGoods, this.apihost})
       : super(key: key);
 
   @override
@@ -880,7 +884,7 @@ class _GoodsEditerState extends State<GoodsEditer> {
           onSearch: (keyword) async {
             try {
               final apiGoodsSearchService = ApiGoodsSearchService(
-                  keyword, ZefyrEditor.of(context).apihost);
+                  keyword, widget.apihost);
               if (apiGoodsSearchService.verify() == false) {
                 showModalBottomSheet(
                     context: context,
