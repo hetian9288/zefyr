@@ -263,6 +263,7 @@ class ImageButton extends StatefulWidget {
 }
 
 class _ImageButtonState extends State<ImageButton> {
+  TextSelection _editorSelection;
   @override
   Widget build(BuildContext context) {
     final toolbar = ZefyrToolbar.of(context);
@@ -283,6 +284,10 @@ class _ImageButtonState extends State<ImageButton> {
 
   void showOverlay() {
     final toolbar = ZefyrToolbar.of(context);
+    _editorSelection = null;
+    if (!toolbar.editor.selection.isCollapsed) {
+      _editorSelection = toolbar.editor.selection.copyWith();
+    }
     toolbar.showOverlay(buildOverlay);
   }
 
@@ -303,15 +308,23 @@ class _ImageButtonState extends State<ImageButton> {
   void _pickFromCamera() async {
     final editor = ZefyrToolbar.of(context).editor;
     final image = await editor.imageDelegate.pickImage(ImageSource.camera);
-    if (image != null)
+    if (image != null){
+      if (_editorSelection != null) {
+        editor.delSelection(_editorSelection);
+      }
       editor.formatSelection(NotusAttribute.embed.image(image));
+    }
   }
 
   void _pickFromGallery() async {
     final editor = ZefyrToolbar.of(context).editor;
     final image = await editor.imageDelegate.pickImage(ImageSource.gallery);
-    if (image != null)
+    if (image != null){
+      if (_editorSelection != null) {
+        editor.delSelection(_editorSelection);
+      }
       editor.formatSelection(NotusAttribute.embed.image(image));
+    }
   }
 }
 
