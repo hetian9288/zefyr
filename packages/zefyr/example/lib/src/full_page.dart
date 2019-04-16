@@ -53,6 +53,49 @@ class _FullPageEditorScreenState extends State<FullPageEditorScreen> {
       ),
     );
 
+    final body = ZefyrScaffold(
+      child: ZefyrTheme(
+        data: theme,
+        child: ZefyrEditor(
+          controller: _controller,
+          focusNode: _focusNode,
+          enabled: _editing,
+          apihost: Uri.parse("http://192.168.1.4:5928"),
+          gesturesDelegate: MyGestures(),
+          imageDelegate: new CustomImageDelegate(),
+          sliverDelegate: (child, physics, scrollController){
+            return CustomScrollView(
+              physics: physics,
+              controller: scrollController,
+              slivers: <Widget>[
+                SliverAppBar(
+                  floating: true,
+                        expandedHeight: 150.0,
+                        flexibleSpace: const FlexibleSpaceBar(
+                          title: Text('Available seats'),
+                        ),
+                        actions: <Widget>[
+                          IconButton(
+                            icon: const Icon(Icons.add_circle),
+                            tooltip: 'Add new entry',
+                            onPressed: () { /* ... */ },
+                          ),
+                        ]
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                      return child;
+                    },
+                    childCount: 1,
+                  ),
+                )
+              ],
+            );
+          },
+        ),
+      ),
+    );
     final done = _editing
         ? [new FlatButton(onPressed: _stopEditing, child: Text('DONE'))]
         : [new FlatButton(onPressed: _startEditing, child: Text('EDIT'))];
@@ -65,19 +108,7 @@ class _FullPageEditorScreenState extends State<FullPageEditorScreen> {
         title: ZefyrLogo(),
         actions: done,
       ),
-      body: ZefyrScaffold(
-        child: ZefyrTheme(
-          data: theme,
-          child: ZefyrEditor(
-            controller: _controller,
-            focusNode: _focusNode,
-            enabled: _editing,
-            apihost: Uri.parse("http://192.168.1.4:5928"),
-            gesturesDelegate: MyGestures(),
-            imageDelegate: new CustomImageDelegate(),
-          ),
-        ),
-      ),
+      body: body,
     );
   }
 
@@ -92,7 +123,14 @@ class _FullPageEditorScreenState extends State<FullPageEditorScreen> {
       _editing = false;
     });
 
-    print(json.encode(_controller.document.toDelta()));
+    HttpClient httpClient = HttpClient();
+    final req = await httpClient.postUrl(Uri.parse("http://192.168.1.4:5928/test"));
+    req.headers
+            .add("Content-Type", "application/x-www-form-urlencoded");
+    req.write("data=${Uri.encodeComponent(json.encode(_controller.document.toDelta()))}");
+    final response = await req.close();
+    var responseBody = await response.transform(utf8.decoder).join();
+    print(responseBody);
   }
 }
 
@@ -124,7 +162,7 @@ class MyGestures extends ZefyrGesturesDelegate {
   @override
   void onPress(RenderEditableBox renderNode, NotusStyle style, Offset offset) {
     // TODO: implement onPress
-    print("---->l");
+    print(["---->l", style]);
   }
 
 }

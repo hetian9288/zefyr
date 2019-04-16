@@ -77,7 +77,6 @@ class ZefyrEditableTextScope extends InheritedWidget {
   })  : _activeBoxes = new Set.from(renderContext.active),
         super(key: key, child: child);
 
-
   final bool enabled;
   final TextSelection selection;
   final ValueNotifier<bool> showCursor;
@@ -134,16 +133,21 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText>
     FocusScope.of(context).reparentIfNeeded(focusNode);
     super.build(context); // See AutomaticKeepAliveState.
     ZefyrEditor.of(context);
-
     Widget body = ListBody(children: _buildChildren(context));
     if (widget.padding != null) {
       body = new Padding(padding: widget.padding, child: body);
     }
-    final scrollable = SingleChildScrollView(
-      physics: widget.physics,
-      controller: _scrollController,
-      child: body,
-    );
+    Widget scrollable;
+    if (widget.enabled) {
+      scrollable = SingleChildScrollView(
+        physics: widget.physics,
+        controller: _scrollController,
+        child: body,
+      );
+    }else{
+      scrollable = ZefyrEditor.of(context).sliverDelegate(body, widget.physics, _scrollController);
+    }
+
 
     final overlay = Overlay.of(context, debugRequiredFor: widget);
     final layers = <Widget>[scrollable];

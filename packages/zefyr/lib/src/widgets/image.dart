@@ -11,6 +11,7 @@ import 'package:flutter/widgets.dart';
 import 'package:notus/notus.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'editable_text.dart';
 import 'editable_box.dart';
 
 abstract class ZefyrImageDelegate<S> {

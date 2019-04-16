@@ -13,12 +13,15 @@ import 'toolbar.dart';
 import 'gestures.dart';
 import 'goods.dart' show GoodsUnion, ApiGoodsUnionService;
 
+typedef Widget SliverDelegate(Widget child, ScrollPhysics physics, ScrollController controller);
+
 class ZefyrEditorScope extends ChangeNotifier {
   ZefyrEditorScope({
     @required ZefyrImageDelegate imageDelegate,
     @required ZefyrController controller,
     @required FocusNode focusNode,
     @required FocusScopeNode focusScope,
+    @required this.sliverDelegate,
     this.apihost,
   })  : _controller = controller,
         _imageDelegate = imageDelegate,
@@ -32,6 +35,7 @@ class ZefyrEditorScope extends ChangeNotifier {
 
   bool _disposed = false;
 
+  SliverDelegate sliverDelegate;
   ZefyrImageDelegate _imageDelegate;
   ZefyrImageDelegate get imageDelegate => _imageDelegate;
 
@@ -181,8 +185,10 @@ class ZefyrEditor extends StatefulWidget {
     this.imageDelegate,
     this.gesturesDelegate,
     this.physics,
+    this.sliverDelegate,
   }) : super(key: key);
 
+  final SliverDelegate sliverDelegate;
   final Uri apihost;
   final ZefyrController controller;
   final FocusNode focusNode;
@@ -283,6 +289,7 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
         focusNode: widget.focusNode,
         focusScope: FocusScope.of(context),
         apihost: widget.apihost,
+        sliverDelegate: widget.sliverDelegate
       );
       _scope.addListener(_handleChange);
     } else {

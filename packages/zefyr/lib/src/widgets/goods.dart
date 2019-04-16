@@ -50,7 +50,9 @@ class ZefyrGoodsModel {
 
   ZefyrGoodsModel.fromJson(Map<String, dynamic> json) {
     id = json['id'];
-    thumbs = json['thumbs'] != null ? (json['thumbs'] as List<dynamic>).cast<String>() : null;
+    thumbs = json['thumbs'] != null
+        ? (json['thumbs'] as List<dynamic>).cast<String>()
+        : null;
     platform = json['platform'];
     title = json['title'];
     subtitle = json['subtitle'];
@@ -99,6 +101,12 @@ class _ZefyrGoodsState extends State<ZefyrGoods> {
         ),
         node: widget.node);
   }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+  }
 }
 
 class ArticleGoods extends StatefulWidget {
@@ -106,25 +114,26 @@ class ArticleGoods extends StatefulWidget {
   final Uri apihost;
   final bool enabled;
 
-
-  ArticleGoods({Key key, this.goods, this.apihost, this.enabled}) : super(key: key);
+  ArticleGoods({Key key, this.goods, this.apihost, this.enabled})
+      : super(key: key);
 
   @override
   _ArticleGoodsState createState() => new _ArticleGoodsState();
 }
 
 class _ArticleGoodsState extends State<ArticleGoods> {
-
   GoodsUnion _union;
+  ApiGoodsUnionService goodsUnionService;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     if (widget.enabled == false) {
-      final goodsUnionService = ApiGoodsUnionService(goods: widget.goods, apihost: widget.apihost);
-      goodsUnionService.union.last.then((goodsUnion){
-        setState((){
+      goodsUnionService =
+          ApiGoodsUnionService(goods: widget.goods, apihost: widget.apihost);
+      goodsUnionService.apiUnion().then((goodsUnion) {
+        setState(() {
           _union = goodsUnion;
         });
       });
@@ -278,44 +287,45 @@ class _ArticleGoodsState extends State<ArticleGoods> {
       return Row(
         children: <Widget>[
           _union.coupon == 0
-                  ? Container()
-                  : ClipRRect(
-            borderRadius: BorderRadius.horizontal(left: Radius.circular(3)),
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                      vertical: 2.0, horizontal: 6.0),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                        colors: [Color(0xffcd0000), Color(0xffff0054)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight),
-              ),
-              child: Text(
-                "券" + _union.couponText,
-                style: TextStyle(color: Colors.white, fontSize: 10),
-              ),
-            ),
-          ),
+              ? Container()
+              : ClipRRect(
+                  borderRadius:
+                      BorderRadius.horizontal(left: Radius.circular(3)),
+                  child: Container(
+                    padding:
+                        EdgeInsets.symmetric(vertical: 2.0, horizontal: 6.0),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          colors: [Color(0xffcd0000), Color(0xffff0054)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight),
+                    ),
+                    child: Text(
+                      "券" + _union.couponText,
+                      style: TextStyle(color: Colors.white, fontSize: 10),
+                    ),
+                  ),
+                ),
           _union.commision == 0
-                  ? Container()
-                  : ClipRRect(
-            borderRadius: BorderRadius.horizontal(right: Radius.circular(3)),
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                      vertical: 2.0, horizontal: 6.0),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                        colors: [Color(0xffFFC850), Color(0xffffe9b3)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight),
-              ),
-              child: Text(
-                "奖励金" + _union.commisionText,
-                style:
-                TextStyle(color: Color(0xffb85400), fontSize: 10),
-              ),
-            ),
-          ),
+              ? Container()
+              : ClipRRect(
+                  borderRadius:
+                      BorderRadius.horizontal(right: Radius.circular(3)),
+                  child: Container(
+                    padding:
+                        EdgeInsets.symmetric(vertical: 2.0, horizontal: 6.0),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          colors: [Color(0xffFFC850), Color(0xffffe9b3)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight),
+                    ),
+                    child: Text(
+                      "奖励金" + _union.commisionText,
+                      style: TextStyle(color: Color(0xffb85400), fontSize: 10),
+                    ),
+                  ),
+                ),
         ],
       );
     } else {
@@ -328,28 +338,26 @@ class _ArticleGoodsState extends State<ArticleGoods> {
     // TODO: implement dispose
     super.dispose();
   }
-
 }
 
-class ApiGoodsUnionService{
+class ApiGoodsUnionService {
   final Uri apihost;
   final ZefyrGoodsModel goods;
   Stream<GoodsUnion> union;
 
-  static Map<String, ApiGoodsUnionService> cache = new Map<String, ApiGoodsUnionService>();
+  static Map<String, ApiGoodsUnionService> cache =
+      new Map<String, ApiGoodsUnionService>();
 
-  factory ApiGoodsUnionService({@required Uri apihost, @required ZefyrGoodsModel goods}) {
-    if (ApiGoodsUnionService.cache["${goods.platform}_${goods.id}"] == null) {
-      ApiGoodsUnionService.cache["${goods.platform}_${goods.id}"] = ApiGoodsUnionService._(apihost, goods);
-    }
-    return ApiGoodsUnionService.cache["${goods.platform}_${goods.id}"];
-  }
+//  factory ApiGoodsUnionService({@required Uri apihost, @required ZefyrGoodsModel goods}) {
+//    if (ApiGoodsUnionService.cache["${goods.platform}_${goods.id}"] == null) {
+//      ApiGoodsUnionService.cache["${goods.platform}_${goods.id}"] = ApiGoodsUnionService._(apihost, goods);
+//    }
+//    return ApiGoodsUnionService.cache["${goods.platform}_${goods.id}"];
+//  }
 
-  ApiGoodsUnionService._(this.apihost, this.goods){
-    union = _apiUnion().asStream();
-  }
+  ApiGoodsUnionService({this.apihost, this.goods});
 
-  Future<GoodsUnion> _apiUnion() async {
+  Future<GoodsUnion> apiUnion() async {
     HttpClient httpClient = HttpClient();
     if (goods.platform == "pinduoduo") {
       if (GoodsUnion.cache["pinduoduo_${goods.id}"] != null) {
@@ -375,7 +383,7 @@ class ApiGoodsUnionService{
         final postReq = await httpClient.postUrl(Uri.parse(url));
         // 拼多多接口适用POST方式
         postReq.headers
-                .add("Content-Type", "application/x-www-form-urlencoded");
+            .add("Content-Type", "application/x-www-form-urlencoded");
         postReq.write(params);
         final resp = await postReq.close();
         final responseBodya = await resp.transform(utf8.decoder).join();
@@ -420,7 +428,7 @@ class ApiGoodsUnionService{
         final postReq = await httpClient.postUrl(Uri.parse(url));
         // 淘宝接口适用POST方式
         postReq.headers
-                .add("Content-Type", "application/x-www-form-urlencoded");
+            .add("Content-Type", "application/x-www-form-urlencoded");
         postReq.write(params);
         final resp = await postReq.close();
         final responseBodya = await resp.transform(utf8.decoder).join();
@@ -429,7 +437,7 @@ class ApiGoodsUnionService{
           return Future.error(respJson['error_response']['sub_msg']);
         } else {
           final detail =
-          respJson['tbk_coupon_convert_response']['result']['results'];
+              respJson['tbk_coupon_convert_response']['result']['results'];
           return Future.value(
             GoodsUnion.taobao(
               id: goods.id,
@@ -439,8 +447,8 @@ class ApiGoodsUnionService{
                 detail['max_commission_rate'],
               ),
               click: detail['coupon_info'] == null
-                      ? detail['item_url']
-                      : detail['coupon_click_url'],
+                  ? detail['item_url']
+                  : detail['coupon_click_url'],
               apihost: apihost,
             ),
           );
@@ -768,7 +776,8 @@ class GoodsEditer extends StatefulWidget {
   final OnSelectGoods onSelectGoods;
   final Uri apihost;
 
-  GoodsEditer({Key key, this.goodsModel, @required this.onSelectGoods, this.apihost})
+  GoodsEditer(
+      {Key key, this.goodsModel, @required this.onSelectGoods, this.apihost})
       : super(key: key);
 
   @override
@@ -883,8 +892,8 @@ class _GoodsEditerState extends State<GoodsEditer> {
           onCancel: () {},
           onSearch: (keyword) async {
             try {
-              final apiGoodsSearchService = ApiGoodsSearchService(
-                  keyword, widget.apihost);
+              final apiGoodsSearchService =
+                  ApiGoodsSearchService(keyword, widget.apihost);
               if (apiGoodsSearchService.verify() == false) {
                 showModalBottomSheet(
                     context: context,
@@ -1351,7 +1360,7 @@ class ApiGoodsSearchService {
     if (jsonData["errcode"] != 200) {
       return Future.error(jsonData['msg']);
     }
-//    print(jsonData['data']);
+
     if ((jsonData['data'] as Map<String, dynamic>).containsKey("native_url") ==
         false) {
       return Future.error("无效的淘口令");
@@ -1362,9 +1371,12 @@ class ApiGoodsSearchService {
           .firstMatch(jsonData['data']['native_url']);
       if (jsonRegExp.groupCount > 0) {
         return int.parse(jsonRegExp.group(1));
+      }else {
+        return Future.error("无效的淘口令");
       }
+    }else{
+      return Future.error("无效的淘口令");
     }
-    return Future.error("淘宝/天猫数据同步异常");
   }
 
   /// 获取淘宝商品数据
@@ -1421,7 +1433,7 @@ class ApiGoodsSearchService {
         return Future.error("由于淘宝平台升级，数据同步迟缓请等待官方升级");
       }
     } catch (e) {
-      return Future.error("淘宝/天猫数据同步异常");
+      return Future.error("淘宝口令无效或者数据同步异常");
     }
   }
 
@@ -1432,7 +1444,7 @@ class ApiGoodsSearchService {
       var response = await request.close();
       var responseBody = await response.transform(utf8.decoder).join();
       final jsonRegExp = new RegExp(
-              r'<script nonce="\d*">\s*window.rawData=([\s\S]*?);\s*</script>')
+              r'window.rawData=([\s\S]*?);\n')
           .firstMatch(responseBody);
       if (jsonRegExp != null) {
         final Map<String, dynamic> jsonStr = json.decode(jsonRegExp.group(1));

@@ -137,6 +137,24 @@ class _RawZefyrLineState extends State<RawZefyrLine> {
     return result;
   }
 
+  Widget buildEmbedBase(BuildContext context) {
+    final editable = ZefyrEditableText.of(context);
+
+    EmbedNode node = widget.node.children.single;
+    EmbedAttribute embed = node.style.get(NotusAttribute.embed);
+
+    if (embed.type == EmbedType.horizontalRule) {
+      final hr = new ZefyrHorizontalRule(node: node);
+      return hr;
+    } else if (embed.type == EmbedType.goods) {
+      return ZefyrGoods(node: node);
+    } else if (embed.type == EmbedType.image) {
+      return ZefyrImage(node: node, delegate: editable.imageDelegate);
+    } else {
+      throw new UnimplementedError('Unimplemented embed type ${embed.type}');
+    }
+  }
+
   Widget buildEmbed(BuildContext context) {
     final theme = ZefyrTheme.of(context);
     final editable = ZefyrEditableText.of(context);

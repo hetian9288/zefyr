@@ -12,10 +12,13 @@ dependencies:
     sdk: flutter
   collection: ^1.14.6
   url_launcher: ^3.0.0
-  image_picker: ^0.4.5
+  image_picker:
+    git: 
+      url: https://github.com/hetian9288/image_picker.git
   quill_delta: ^1.0.0-dev.1.0
 #  notus: ^0.1.0
   meta: ^1.1.0
+  crypto: ^2.0.6
   notus:
       path: ../notus
 
